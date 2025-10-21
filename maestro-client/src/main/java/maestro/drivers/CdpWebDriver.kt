@@ -272,6 +272,9 @@ class CdpWebDriver(
         if (attrs.containsKey("selected") && attrs["selected"] != null) {
             attributes["selected"] = (attrs["selected"] as Boolean).toString()
         }
+        if (attrs.containsKey("focused") && attrs["focused"] != null) {
+            attributes["focused"] = (attrs["focused"] as Boolean).toString()
+        }
         var enabled = true
         if (attrs.containsKey("disabled") && attrs["disabled"] != null) {
             enabled = !(attrs["disabled"] as Boolean)
