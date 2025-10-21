@@ -76,6 +76,12 @@
 
     const isDocumentLoading = () => document.readyState !== 'complete'
 
+    /**
+     * 
+     * @param {HTMLElement} node 
+     * @param {boolean} [includeChildren=true]
+     * @returns 
+     */
     const traverse = (node, includeChildren = true) => {
       if (!node || isInvalidTag(node)) return null
 
@@ -95,7 +101,7 @@
 
       if (!!node.id || !!node.ariaLabel || !!node.name || !!node.title || !!node.htmlFor || !!node.attributes['data-testid']) {
         const title = typeof node.title === 'string' ? node.title : null
-        attributes['resource-id'] = node.id || node.ariaLabel || node.name || title || node.htmlFor || node.attributes['data-testid']?.value
+        attributes['resource-id'] = node.attributes['data-testid']?.value || node.id || node.ariaLabel || node.name || title || node.htmlFor
       }
 
       if (node.tagName.toLowerCase() === 'body') {
@@ -104,6 +110,18 @@
 
       if (node.selected) {
         attributes['selected'] = true
+      }
+
+      if (node.ariaDisabled === 'true' || node.disabled) {
+        attributes['disabled'] = true
+      }
+
+      if (node === document.activeElement) {
+        attributes['focused'] = true
+      }
+
+      if (node.ariaChecked === 'true' || node.checked) {
+        attributes['checked'] = true
       }
 
       if (isSynthetic(node)) {

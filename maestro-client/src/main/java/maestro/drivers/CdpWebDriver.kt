@@ -259,7 +259,7 @@ class CdpWebDriver(
         return root
     }
 
-    fun parseDomAsTreeNodes(domRepresentation: Map<String, Any>): TreeNode {
+    fun parseDomAsTreeNodes(domRepresentation: Map<String, Any>, notClickable: Boolean? = false): TreeNode {
         val attrs = domRepresentation["attributes"] as Map<String, Any>
 
         val attributes = mutableMapOf(
@@ -272,6 +272,19 @@ class CdpWebDriver(
         if (attrs.containsKey("selected") && attrs["selected"] != null) {
             attributes["selected"] = (attrs["selected"] as Boolean).toString()
         }
+        var enabled = true
+        if (attrs.containsKey("disabled") && attrs["disabled"] != null) {
+            enabled = !(attrs["disabled"] as Boolean)
+        }
+        attributes["enabled"] = enabled.toString()
+        if (attrs.containsKey("checked") && attrs["checked"] != null) {
+            attributes["checked"] = (attrs["checked"] as Boolean).toString()
+        }
+        var clickable = !(notClickable ?: false)
+        if (attrs.containsKey("notClickable") && attrs["notClickable"] != null) {
+            clickable = !(attrs["notClickable"] as Boolean)
+        }
+        attributes["clickable"] = clickable.toString()
         if (attrs.containsKey("synthetic") && attrs["synthetic"] != null) {
             attributes["synthetic"] = (attrs["synthetic"] as Boolean).toString()
         }
@@ -281,7 +294,15 @@ class CdpWebDriver(
 
         val children = domRepresentation["children"] as List<Map<String, Any>>
 
-        return TreeNode(attributes = attributes, children = children.map { parseDomAsTreeNodes(it) })
+        return TreeNode(
+            attributes = attributes,
+            enabled = enabled,
+            selected = attributes["selected"]?.toBoolean(),
+            checked = attributes["checked"]?.toBoolean(),
+            clickable = clickable,
+            focused = attributes["focused"]?.toBoolean(),
+            children = children.map { parseDomAsTreeNodes(it, !clickable)
+        })
     }
 
     private fun detectWindowChange() {
