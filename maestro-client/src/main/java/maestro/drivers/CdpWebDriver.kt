@@ -392,8 +392,7 @@ class CdpWebDriver(
     override fun pressKey(code: KeyCode) {
         val driver = ensureOpen()
 
-        val xPath = executeJS("window.maestro.createXPathFromElement(document.activeElement)") as String
-        val element = driver.findElement(By.ByXPath(xPath))
+        val element = driver.switchTo().activeElement()
         val key = mapToSeleniumKey(code)
         element.sendKeys(key)
     }
@@ -462,11 +461,10 @@ class CdpWebDriver(
     override fun inputText(text: String) {
         val driver = ensureOpen()
 
-        val xPath = executeJS("window.maestro.createXPathFromElement(document.activeElement)") as String
-        val element = driver.findElement(By.ByXPath(xPath))
+        val element = driver.switchTo().activeElement()
         for (c in text.toCharArray()) {
             element.sendKeys("$c")
-            sleep(random(20, 100).toLong())
+            sleep(random(1, 20).toLong())
         }
     }
 
@@ -526,14 +524,11 @@ class CdpWebDriver(
     override fun eraseText(charactersToErase: Int) {
         val driver = ensureOpen()
 
-        val xPath = executeJS("window.maestro.createXPathFromElement(document.activeElement)") as String
-        val element = driver.findElement(By.ByXPath(xPath))
+        val element = driver.switchTo().activeElement()
         for (i in 0 until charactersToErase) {
             element.sendKeys(Keys.BACK_SPACE)
-            sleep(random(20, 50).toLong())
+            sleep(random(1, 20).toLong())
         }
-
-        sleep(1000)
     }
 
     override fun setProxy(host: String, port: Int) {
