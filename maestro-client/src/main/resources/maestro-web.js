@@ -121,7 +121,7 @@
 
       if (!!node.id || !!node.ariaLabel || !!node.name || !!node.title || !!node.htmlFor || !!node.attributes['data-testid']) {
         const title = typeof node.title === 'string' ? node.title : null
-        attributes['resource-id'] = node.attributes['data-testid']?.value || node.id || node.ariaLabel || node.name || title || node.htmlFor
+        attributes['resource-id'] = node.attributes['data-testid']?.value || node.id || node.ariaLabel || node.name || title || node.htmlFor?.value
       }
 
       if (node.tagName.toLowerCase() === 'body') {
