@@ -1,6 +1,7 @@
 package maestro.drivers
 
 import CdpClient
+import CdpTarget
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import kotlinx.coroutines.runBlocking
 import maestro.Capability
@@ -107,11 +108,19 @@ class CdpWebDriver(
                 addArguments("--lang=en")
                 if (isHeadless) {
                     addArguments("--headless=new")
-                    addArguments("--window-size=1024,768")
                     setExperimentalOption("detach", true)
+                } else {
+                    addArguments("--auto-open-devtools-for-tabs")
                 }
             }
         )
+
+        driver.executeCdpCommand("Emulation.setDeviceMetricsOverride", mapOf(
+            "width" to 1024,
+            "height" to 768,
+            "deviceScaleFactor" to 1,
+            "mobile" to false,
+        ))
 
         val options = driver.capabilities.getCapability("goog:chromeOptions") as Map<String, Any>
         val debuggerAddress = options["debuggerAddress"] as String
@@ -129,10 +138,24 @@ class CdpWebDriver(
         return seleniumDriver ?: error("Driver is not open")
     }
 
+    private suspend fun getCdpTarget(): CdpTarget {
+        val driver = ensureOpen()
+        val id = driver.windowHandle
+        val targets = cdpClient.listTargets()
+        val target = targets.find { it.id == id }
+        if (target != null) {
+            return target
+        }
+        LOGGER.warn("Could not find CDP target for window handle $id, falling back to first target")
+        LOGGER.debug("Available targets: {}", targets.map { "id=${it.id}, title=${it.title}, url=${it.url}" })
+        return targets.first()
+
+    }
+
     private fun executeJS(js: String): Any? {
         return runBlocking {
             try {
-                val target = cdpClient.listTargets().first()
+                val target = getCdpTarget()
 
                 cdpClient.evaluate("$maestroWebScript", target)
 
@@ -216,7 +239,7 @@ class CdpWebDriver(
         injectedArguments = injectedArguments + launchArguments
 
         runBlocking {
-            val target = cdpClient.listTargets().first()
+            val target = getCdpTarget()
             cdpClient.openUrl(appId, target)
         }
     }
@@ -481,7 +504,7 @@ class CdpWebDriver(
 
     override fun takeScreenshot(out: Sink, compressed: Boolean) {
         runBlocking {
-            val target = cdpClient.listTargets().first()
+            val target = getCdpTarget()
             val bytes = cdpClient.captureScreenshot(target)
 
             out.buffer().use { it.write(bytes) }

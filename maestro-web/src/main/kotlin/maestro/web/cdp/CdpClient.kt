@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * Descriptor for a CDP target (an open tab/page).
  */
 @Serializable
-data class CdpTarget(
+public data class CdpTarget(
     val id: String,
     val title: String,
     val url: String,
