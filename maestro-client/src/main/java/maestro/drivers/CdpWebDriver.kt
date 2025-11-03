@@ -14,6 +14,7 @@ import maestro.OnDeviceElementQuery
 import maestro.Platform
 import maestro.Point
 import maestro.ScreenRecording
+import maestro.ScrollDirection
 import maestro.SwipeDirection
 import maestro.TreeNode
 import maestro.ViewHierarchy
@@ -22,7 +23,6 @@ import maestro.web.record.JcodecVideoEncoder
 import maestro.web.record.WebScreenRecorder
 import okio.Sink
 import okio.buffer
-import org.openqa.selenium.By
 import org.openqa.selenium.Keys
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
@@ -282,7 +282,7 @@ class CdpWebDriver(
         return root
     }
 
-    fun parseDomAsTreeNodes(domRepresentation: Map<String, Any>, notClickable: Boolean? = false): TreeNode {
+    fun parseDomAsTreeNodes(domRepresentation: Map<String, Any>): TreeNode {
         val attrs = domRepresentation["attributes"] as Map<String, Any>
 
         val attributes = mutableMapOf(
@@ -306,9 +306,9 @@ class CdpWebDriver(
         if (attrs.containsKey("checked") && attrs["checked"] != null) {
             attributes["checked"] = (attrs["checked"] as Boolean).toString()
         }
-        var clickable = !(notClickable ?: false)
-        if (attrs.containsKey("notClickable") && attrs["notClickable"] != null) {
-            clickable = !(attrs["notClickable"] as Boolean)
+        var clickable = true
+        if (attrs.containsKey("unclickable") && attrs["unclickable"] != null) {
+            clickable = !(attrs["unclickable"] as Boolean)
         }
         attributes["clickable"] = clickable.toString()
         if (attrs.containsKey("synthetic") && attrs["synthetic"] != null) {
@@ -327,7 +327,7 @@ class CdpWebDriver(
             checked = attributes["checked"]?.toBoolean(),
             clickable = clickable,
             focused = attributes["focused"]?.toBoolean(),
-            children = children.map { parseDomAsTreeNodes(it, !clickable)
+            children = children.map { parseDomAsTreeNodes(it)
         })
     }
 
@@ -463,17 +463,48 @@ class CdpWebDriver(
     }
 
     override fun swipe(swipeDirection: SwipeDirection, durationMs: Long) {
-        when (swipeDirection) {
-            SwipeDirection.UP -> scroll("window.scrollY + Math.round(window.innerHeight / 2)", "window.scrollX")
-            SwipeDirection.DOWN -> scroll("window.scrollY - Math.round(window.innerHeight / 2)", "window.scrollX")
-            SwipeDirection.LEFT -> scroll("window.scrollY", "window.scrollX + Math.round(window.innerWidth / 2)")
-            SwipeDirection.RIGHT -> scroll("window.scrollY", "window.scrollX - Math.round(window.innerWidth / 2)")
-        }
+        swipeFrom(direction = swipeDirection, start = null)
+//        when (swipeDirection) {
+//            SwipeDirection.UP -> scroll("window.scrollY + Math.round(window.innerHeight / 2)", "window.scrollX")
+//            SwipeDirection.DOWN -> scroll("window.scrollY - Math.round(window.innerHeight / 2)", "window.scrollX")
+//            SwipeDirection.LEFT -> scroll("window.scrollY", "window.scrollX + Math.round(window.innerWidth / 2)")
+//            SwipeDirection.RIGHT -> scroll("window.scrollY", "window.scrollX - Math.round(window.innerWidth / 2)")
+//        }
     }
 
     override fun swipe(elementPoint: Point, direction: SwipeDirection, durationMs: Long) {
         // Ignoring elementPoint to enable a rudimentary implementation of scrollUntilVisible for web
-        swipe(direction, durationMs)
+//        swipe(direction, durationMs)
+        swipeFrom(direction, elementPoint)
+    }
+
+    private fun swipeFrom(direction: SwipeDirection, start: Point?) {
+        val deviceInfo = deviceInfo()
+        val actualStart = start ?: when (direction) {
+            SwipeDirection.UP -> Point(deviceInfo.widthPixels / 2, deviceInfo.heightPixels * 3 / 4)
+            SwipeDirection.DOWN -> Point(deviceInfo.widthPixels / 2, deviceInfo.heightPixels / 4)
+            SwipeDirection.LEFT -> Point(deviceInfo.widthPixels * 3 / 4, deviceInfo.heightPixels / 2)
+            SwipeDirection.RIGHT -> Point(deviceInfo.widthPixels / 4, deviceInfo.heightPixels / 2)
+        }
+        val quarterWidth = deviceInfo.widthPixels / 4
+        val quarterHeight = deviceInfo.heightPixels / 4
+        val driver = ensureOpen() as ChromeDriver
+        val event = mapOf(
+            "type" to "mouseWheel",
+            "x" to actualStart.x,
+            "y" to actualStart.y,
+            "modifiers" to 0,
+            "deltaX" to 0,
+            "deltaY" to 0,
+        )
+        val parameters = when (direction) {
+            SwipeDirection.UP -> event + mapOf("deltaY" to quarterHeight)
+            SwipeDirection.DOWN -> event + mapOf("deltaY" to -quarterHeight)
+            SwipeDirection.LEFT -> event + mapOf("deltaX" to quarterWidth)
+            SwipeDirection.RIGHT -> event + mapOf("deltaX" to quarterWidth)
+        }
+        driver.executeCdpCommand("Input.dispatchMouseEvent", parameters)
+        return
     }
 
     override fun backPress() {

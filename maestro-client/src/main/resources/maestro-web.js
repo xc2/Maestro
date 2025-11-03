@@ -5,6 +5,23 @@
         return INVALID_TAGS.has(node.tagName.toLowerCase())
     }
 
+    const isVisible = (node, rect) => {
+      const tryPoints = [
+        { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+        { x: rect.left + 1, y: rect.top + 1 },
+        { x: rect.right - 1, y: rect.top + 1 },
+        { x: rect.left + 1, y: rect.bottom - 1 },
+        { x: rect.right - 1, y: rect.bottom - 1 },
+      ]
+      for (const point of tryPoints) {
+        const topEl = document.elementFromPoint(point.x, point.y)
+        if (topEl && (node === topEl || node.contains(topEl))) {
+          return true
+        }
+      }
+      return false
+    }
+
     // Synthetic nodes do not truly have a visual representation in the DOM, but they are still visible to the user.
     const isSynthetic = (node) => {
         return node.tagName.toLowerCase() === 'option'
@@ -53,12 +70,11 @@
         return `[${Math.round(l)},${Math.round(t)}][${Math.round(r)},${Math.round(b)}]`
     }
 
-    const getNodeBounds = (node) => {
+    const getNodeBounds = (node, rect) => {
         if (isSynthetic(node)) {
             return getSyntheticNodeBounds(node);
         }
 
-        const rect = node.getBoundingClientRect()
         const vpx = maestro.viewportX;
         const vpy = maestro.viewportY;
         const vpw = maestro.viewportWidth || window.innerWidth;
@@ -89,9 +105,13 @@
         ? [...node.children || []].map(child => traverse(child)).filter(el => !!el)
         : []
 
+      const rect = node.getBoundingClientRect()
       const attributes = {
           text: getNodeText(node),
-          bounds: getNodeBounds(node),
+          bounds: getNodeBounds(node, rect),
+      }
+      if (!isVisible(node, rect)) {
+        attributes['unclickable'] = true
       }
 
       // If this is an <option> element, we only want to include it if the parent <select> element is focused.

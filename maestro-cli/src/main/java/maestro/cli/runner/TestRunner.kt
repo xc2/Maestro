@@ -19,6 +19,7 @@ import maestro.cli.runner.resultview.UiState
 import maestro.cli.util.EnvUtils
 import maestro.cli.util.PrintUtils
 import maestro.cli.view.ErrorViewUtils
+import maestro.drivers.CdpWebDriver
 import maestro.orchestra.MaestroCommand
 import maestro.orchestra.util.Env.withEnv
 import maestro.orchestra.util.Env.withDefaultEnvVars
@@ -85,6 +86,8 @@ object TestRunner {
                     testOutputDir = testOutputDir,
                 )
             }
+        }.onFailure {
+            PrintUtils.err("Flow execution failed: ${it.message}")
         }
 
         TestDebugReporter.saveFlow(
@@ -107,6 +110,9 @@ object TestRunner {
                 if (exception is MaestroException.DriverTimeout && debugMessage != null) {
                     PrintUtils.err(debugMessage)
                 }
+            }
+            if (maestro.driver is CdpWebDriver) {
+                logger.info("1")
             }
         }
 

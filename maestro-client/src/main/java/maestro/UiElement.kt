@@ -28,6 +28,13 @@ data class UiElement(
         return bounds.center().distance(other.bounds.center())
     }
 
+    fun getVisiblePercentageIfClickable(screenWidth: Int, screenHeight: Int): Double {
+        if (treeNode.clickable == false) {
+            return 0.0
+        }
+        return getVisiblePercentage(screenWidth, screenHeight)
+    }
+
     fun getVisiblePercentage(screenWidth: Int, screenHeight: Int): Double {
         if (bounds.width == 0 && bounds.height == 0) {
             return 0.0

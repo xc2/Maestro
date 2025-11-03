@@ -122,7 +122,7 @@ object MaestroSessionManager {
             SessionStore.delete(sessionId, selectedDevice.platform)
             runCatching { ScreenReporter.reportMaxDepth() }
             if (SessionStore.activeSessions().isEmpty()) {
-//                session.close()
+                session.close()
             }
         })
 

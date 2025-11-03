@@ -27,6 +27,7 @@ import maestro.Filters.asFilter
 import maestro.FindElementResult
 import maestro.Maestro
 import maestro.MaestroException
+import maestro.Platform
 import maestro.Point
 import maestro.ScreenRecording
 import maestro.UiElement
@@ -289,7 +290,7 @@ class Orchestra(
             jsEngine.close()
         }
         val isRhinoExplicitlyRequested = config?.ext?.get("jsEngine") == "rhino"
-                
+
         val platform = maestro.cachedDeviceInfo.platform.toString().lowercase()
         jsEngine = if (isRhinoExplicitlyRequested) {
             httpClient?.let { RhinoJsEngine(it, platform) } ?: RhinoJsEngine(platform = platform)
@@ -610,7 +611,9 @@ class Orchestra(
         do {
             try {
                 val element = findElement(command.selector, command.optional, 500).element
-                val visibility = element.getVisiblePercentage(deviceInfo.widthGrid, deviceInfo.heightGrid)
+                val visibility = if (deviceInfo.platform === Platform.WEB)
+                    element.getVisiblePercentageIfClickable(deviceInfo.widthGrid, deviceInfo.heightGrid)
+                    else element.getVisiblePercentage(deviceInfo.widthGrid, deviceInfo.heightGrid)
 
                 logger.info("Scrolling try count: $retryCenterCount, DeviceWidth: ${deviceInfo.widthGrid}, DeviceWidth: ${deviceInfo.heightGrid}")
                 logger.info("Element bounds: ${element.bounds}")
@@ -1062,8 +1065,8 @@ class Orchestra(
         // Handle element-relative tap if specified
         val relativePoint = command.relativePoint
         if (relativePoint != null) {
-            val tapPoint = calculateElementRelativePoint(result.element, relativePoint)      
-                  
+            val tapPoint = calculateElementRelativePoint(result.element, relativePoint)
+
             maestro.tap(
                 x = tapPoint.x,
                 y = tapPoint.y,
