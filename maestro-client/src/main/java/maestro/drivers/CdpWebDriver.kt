@@ -204,6 +204,14 @@ class CdpWebDriver(
         return Random().nextInt((end + 1) - start) + start
     }
 
+    fun pauseForDebugging() {
+        if (isHeadless || System.console() == null || isStudio) {
+            return
+        }
+        println("Driver paused for debugging. Press ENTER to continue...")
+        readlnOrNull()
+    }
+
     override fun close() {
         injectedArguments = emptyMap()
 

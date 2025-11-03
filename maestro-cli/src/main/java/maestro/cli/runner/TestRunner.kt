@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
 import kotlin.concurrent.thread
+import kotlin.math.exp
 
 /**
  * Knows how to run a single Maestro flow (either one-shot or continuously).
@@ -111,8 +112,11 @@ object TestRunner {
                     PrintUtils.err(debugMessage)
                 }
             }
-            if (maestro.driver is CdpWebDriver) {
-                logger.info("1")
+        }
+        if (exception != null || result.isErr) {
+            val driver = maestro.driver
+            if (driver is CdpWebDriver) {
+                driver.pauseForDebugging()
             }
         }
 
